@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, OAuth2PasswordRequestForm
 from app.schemas.user import UserCreate, UserLogin, Token
 from app.models.user import create_user, get_user, verify_password
 from app.core.security import create_access_token, decode_token
@@ -7,7 +7,7 @@ from datetime import timedelta
 
 router = APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+oauth2_scheme = HTTPBearer()
 
 @router.post("/register", response_model=dict)
 def register(user: UserCreate):
@@ -29,8 +29,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": token, "token_type": "bearer"}
 
 @router.get("/me")
-def me(token: str = Depends(oauth2_scheme)):
-    payload = decode_token(token)
+def me(token: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
+    payload = decode_token(token.credentials)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
     return {"user": payload["sub"]}
